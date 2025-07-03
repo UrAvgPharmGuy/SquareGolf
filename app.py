@@ -101,7 +101,8 @@ with st.expander("Shot Dispersion Chart", expanded=True):
             height=400
         )
 
-        color_map = {club: color for club, color in zip(filtered_df["Club"].unique(), px.colors.qualitative.Set2)}
+        color_palette = px.colors.qualitative.Set2
+        club_colors = {club: color_palette[i % len(color_palette)] for i, club in enumerate(filtered_df["Club"].unique())}
 
         for club in filtered_df["Club"].unique():
             club_data = filtered_df[filtered_df["Club"] == club]
@@ -110,6 +111,14 @@ with st.expander("Shot Dispersion Chart", expanded=True):
                 y_mean = club_data["Carry"].mean()
                 x_std = club_data["Offline"].std()
                 y_std = club_data["Carry"].std()
+
+                # Convert RGB to RGBA with transparency
+                base_color = club_colors[club]
+                if base_color.startswith('rgb'):
+                    rgba = base_color.replace('rgb', 'rgba').replace(')', ', 0.2)')
+                else:
+                    rgba = base_color
+
                 fig_dispersion.add_shape(
                     type="circle",
                     xref="x",
@@ -118,8 +127,8 @@ with st.expander("Shot Dispersion Chart", expanded=True):
                     x1=x_mean + x_std,
                     y0=y_mean - y_std,
                     y1=y_mean + y_std,
-                    line=dict(color=color_map[club], width=1),
-                    fillcolor=color_map[club].replace('1.0', '0.15') if '1.0' in color_map[club] else color_map[club] + '26',  # Approx 15% opacity
+                    line=dict(color=base_color, width=1),
+                    fillcolor=rgba,
                     opacity=0.5,
                     layer="below"
                 )
