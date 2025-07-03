@@ -45,9 +45,9 @@ remove_outliers = st.sidebar.checkbox("Remove outliers", value=True)
 import glob
 import os
 
-session_files = glob.glob("Sessions/session_*.csv")
+session_files = glob.glob("sessions/Session_*.csv")
 all_sessions = []
-# Look for files
+
 for f in session_files:
     df_temp = load_and_clean_csv(f)
     session_date = os.path.basename(f).replace("session_", "").replace(".csv", "")
@@ -160,6 +160,8 @@ st.dataframe(distance_summary.rename(columns={"min": "Min", "mean": "Average", "
 # --- Dispersion Chart with Filled Ellipses ---
 with st.expander("Shot Dispersion Chart", expanded=True):
     if "Carry" in filtered_df.columns and "Offline" in filtered_df.columns:
+        import numpy as np
+
         color_palette = px.colors.qualitative.Set2
         club_colors = {club: color_palette[i % len(color_palette)] for i, club in enumerate(filtered_df["Club"].unique())}
 
@@ -174,31 +176,31 @@ with st.expander("Shot Dispersion Chart", expanded=True):
             color_discrete_map=club_colors
         )
 
+        # Add ellipse as a scatter trace so it toggles with legend
         for club in filtered_df["Club"].unique():
             club_data = filtered_df[filtered_df["Club"] == club]
             if len(club_data) > 2:
                 x_mean = club_data["Offline"].mean()
                 y_mean = club_data["Carry"].mean()
-                x_std = club_data["Offline"].std()
-                y_std = club_data["Carry"].std()
+                x_std = club_data["Offline"].std() * 2
+                y_std = club_data["Carry"].std() * 2
 
-                # Use 2x std for ellipse coverage and consistent color
-                base_color = club_colors[club]
-                rgba = base_color.replace('rgb', 'rgba').replace(')', ', 0.2)') if base_color.startswith('rgb') else base_color
+                theta = np.linspace(0, 2 * np.pi, 100)
+                x_ellipse = x_mean + x_std * np.cos(theta)
+                y_ellipse = y_mean + y_std * np.sin(theta)
 
-                fig_dispersion.add_shape(
-                    type="circle",
-                    xref="x",
-                    yref="y",
-                    x0=x_mean - 2 * x_std,
-                    x1=x_mean + 2 * x_std,
-                    y0=y_mean - 2 * y_std,
-                    y1=y_mean + 2 * y_std,
-                    line=dict(color=base_color, width=1),
-                    fillcolor=rgba,
-                    opacity=0.5,
-                    layer="below"
-                )
+                fig_dispersion.add_trace(go.Scatter(
+                    x=x_ellipse,
+                    y=y_ellipse,
+                    mode="lines",
+                    line=dict(color=club_colors[club], width=2, dash="dot"),
+                    fill='toself',
+                    fillcolor=club_colors[club].replace('rgb', 'rgba').replace(')', ', 0.1)'),
+                    name=f"{club} Ellipse",
+                    legendgroup=club,
+                    showlegend=False,
+                    hoverinfo='skip'
+                ))
 
         st.plotly_chart(fig_dispersion, use_container_width=True)
     else:
