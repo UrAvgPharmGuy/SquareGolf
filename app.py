@@ -45,7 +45,9 @@ if df.empty:
 
 # --- Sidebar filters ---
 club_list = sorted(df["Club"].unique())
-selected_clubs = st.sidebar.multiselect("Select Club(s)", club_list, default=club_list)
+with st.sidebar:
+    st.subheader("Filters")
+    selected_clubs = st.multiselect("Select Club(s)", club_list, default=club_list)
 
 filtered_df = df[df["Club"].isin(selected_clubs)]
 
@@ -79,70 +81,72 @@ for col in numeric_cols:
         filtered_df[col] = pd.to_numeric(filtered_df[col], errors="coerce")
 
 # --- Summary Table: Min/Avg/Max Total Distance ---
-st.subheader("Total Distance Summary by Club")
-if "Total Distance" in filtered_df.columns:
-    distance_summary = filtered_df.groupby("Club")["Total Distance"].agg(["min", "mean", "max"]).round(1).reset_index()
-    st.dataframe(distance_summary.rename(columns={"min": "Min", "mean": "Average", "max": "Max"}), use_container_width=True)
+col1, col2 = st.columns([2, 1])
+with col1:
+    st.subheader("Total Distance Summary by Club")
+    if "Total Distance" in filtered_df.columns:
+        distance_summary = filtered_df.groupby("Club")["Total Distance"].agg(["min", "mean", "max"]).round(1).reset_index()
+        st.dataframe(distance_summary.rename(columns={"min": "Min", "mean": "Average", "max": "Max"}).style.set_properties(**{'font-size': '12px'}), use_container_width=True)
 
 # --- Dispersion Chart ---
-st.subheader("Shot Dispersion Tracer Chart")
-if "Carry" in filtered_df.columns and "Offline" in filtered_df.columns:
-    fig_tracer = go.Figure()
-    for club in filtered_df["Club"].unique():
-        club_data = filtered_df[filtered_df["Club"] == club]
-        for _, row in club_data.iterrows():
-            fig_tracer.add_trace(go.Scatter(
-                x=[0, row["Offline"]],
-                y=[0, row["Carry"]],
-                mode='lines+markers',
-                line=dict(width=2),
-                marker=dict(size=6),
-                name=club,
-                showlegend=False,
-                hoverinfo='text',
-                text=f"{club}<br>Carry: {row['Carry']} yd<br>Offline: {row['Offline']} yd"
-            ))
-    fig_tracer.update_layout(
-        title="Shot Tracer Dispersion by Club",
-        xaxis_title="Offline (yd)",
-        yaxis_title="Carry (yd)",
-        height=500
-    )
-    st.plotly_chart(fig_tracer, use_container_width=True)
-else:
-    st.warning("Missing Carry or Offline data.")
+with st.expander("Shot Dispersion Tracer Chart", expanded=True):
+    if "Carry" in filtered_df.columns and "Offline" in filtered_df.columns:
+        fig_tracer = go.Figure()
+        for club in filtered_df["Club"].unique():
+            club_data = filtered_df[filtered_df["Club"] == club]
+            for _, row in club_data.iterrows():
+                fig_tracer.add_trace(go.Scatter(
+                    x=[0, row["Offline"]],
+                    y=[0, row["Carry"]],
+                    mode='lines+markers',
+                    line=dict(width=2),
+                    marker=dict(size=6),
+                    name=club,
+                    showlegend=False,
+                    hoverinfo='text',
+                    text=f"{club}<br>Carry: {row['Carry']} yd<br>Offline: {row['Offline']} yd"
+                ))
+        fig_tracer.update_layout(
+            title="Shot Tracer Dispersion by Club",
+            xaxis_title="Offline (yd)",
+            yaxis_title="Carry (yd)",
+            height=400
+        )
+        st.plotly_chart(fig_tracer, use_container_width=True)
+    else:
+        st.warning("Missing Carry or Offline data.")
 
 # --- Gapping Chart ---
-st.subheader("Gapping Chart: Avg Carry and Total Distance per Club")
-if "Carry" in filtered_df.columns and "Total Distance" in filtered_df.columns:
-    gapping_df = (
-        filtered_df.groupby("Club")[["Carry", "Total Distance"]]
-        .mean()
-        .reset_index()
-        .sort_values("Carry", ascending=False)
-    )
+with st.expander("Gapping Chart: Avg Carry and Total Distance per Club", expanded=False):
+    if "Carry" in filtered_df.columns and "Total Distance" in filtered_df.columns:
+        gapping_df = (
+            filtered_df.groupby("Club")[["Carry", "Total Distance"]]
+            .mean()
+            .reset_index()
+            .sort_values("Carry", ascending=False)
+        )
 
-    gapping_df_melted = gapping_df.melt(id_vars="Club", value_vars=["Carry", "Total Distance"], 
-                                        var_name="Metric", value_name="Distance")
+        gapping_df_melted = gapping_df.melt(id_vars="Club", value_vars=["Carry", "Total Distance"], 
+                                            var_name="Metric", value_name="Distance")
 
-    gapping_df_melted["Distance"] = gapping_df_melted["Distance"].round(0)
+        gapping_df_melted["Distance"] = gapping_df_melted["Distance"].round(0)
 
-    fig_gapping = px.bar(
-        gapping_df_melted,
-        x="Distance",
-        y="Club",
-        color="Metric",
-        orientation="h",
-        barmode="group",
-        text="Distance",
-        title="Average Carry and Total Distance by Club",
-        height=500
-    )
-    fig_gapping.update_traces(textposition='outside')
-    st.plotly_chart(fig_gapping, use_container_width=True)
-else:
-    st.warning("Missing Carry or Total Distance data.")
+        fig_gapping = px.bar(
+            gapping_df_melted,
+            x="Distance",
+            y="Club",
+            color="Metric",
+            orientation="h",
+            barmode="group",
+            text="Distance",
+            title="Average Carry and Total Distance by Club",
+            height=400
+        )
+        fig_gapping.update_traces(textposition='outside')
+        st.plotly_chart(fig_gapping, use_container_width=True)
+    else:
+        st.warning("Missing Carry or Total Distance data.")
 
 # --- Raw Table ---
-st.subheader("Shot Data Table")
-st.dataframe(filtered_df.reset_index(drop=True), use_container_width=True)
+with st.expander("Shot Data Table", expanded=False):
+    st.dataframe(filtered_df.reset_index(drop=True).style.set_properties(**{'font-size': '12px'}), use_container_width=True)
