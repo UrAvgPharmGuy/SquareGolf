@@ -88,7 +88,7 @@ with col1:
         distance_summary = filtered_df.groupby("Club")["Total Distance"].agg(["min", "mean", "max"]).round(1).reset_index()
         st.dataframe(distance_summary.rename(columns={"min": "Min", "mean": "Average", "max": "Max"}).style.set_properties(**{'font-size': '12px'}), use_container_width=True)
 
-# --- Dispersion Chart with Circles ---
+# --- Dispersion Chart with Filled Ellipses ---
 with st.expander("Shot Dispersion Chart", expanded=True):
     if "Carry" in filtered_df.columns and "Offline" in filtered_df.columns:
         fig_dispersion = px.scatter(
@@ -101,7 +101,8 @@ with st.expander("Shot Dispersion Chart", expanded=True):
             height=400
         )
 
-        # Add ellipse-like outline using go.Scatter
+        color_map = {club: color for club, color in zip(filtered_df["Club"].unique(), px.colors.qualitative.Set2)}
+
         for club in filtered_df["Club"].unique():
             club_data = filtered_df[filtered_df["Club"] == club]
             if len(club_data) > 2:
@@ -117,7 +118,10 @@ with st.expander("Shot Dispersion Chart", expanded=True):
                     x1=x_mean + x_std,
                     y0=y_mean - y_std,
                     y1=y_mean + y_std,
-                    line=dict(color="rgba(0,0,0,0.3)", width=2),
+                    line=dict(color=color_map[club], width=1),
+                    fillcolor=color_map[club].replace('1.0', '0.15') if '1.0' in color_map[club] else color_map[club] + '26',  # Approx 15% opacity
+                    opacity=0.5,
+                    layer="below"
                 )
 
         st.plotly_chart(fig_dispersion, use_container_width=True)
