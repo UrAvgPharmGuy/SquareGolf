@@ -45,7 +45,7 @@ remove_outliers = st.sidebar.checkbox("Remove outliers", value=True)
 import glob
 import os
 
-session_files = glob.glob("Sessions/session_*.csv")
+session_files = glob.glob("sessions/session_*.csv")
 all_sessions = []
 
 for f in session_files:
@@ -133,8 +133,29 @@ col1, col2 = st.columns([2, 1])
 with col1:
     st.subheader("Total Distance Summary by Club")
     if "Total Distance" in filtered_df.columns:
-        distance_summary = filtered_df.groupby("Club")["Total Distance"].agg(["min", "mean", "max"]).round(0).astype(int).reset_index().sort_values("Club")
-        st.dataframe(distance_summary.rename(columns={"min": "Min", "mean": "Average", "max": "Max"}).style.set_properties(**{'font-size': '12px'}), use_container_width=True)
+        club_order = {
+    "56-Degree": 0,
+    "S-Wedge": 1,
+    "G-Wedge": 2,
+    "P-Wedge": 3,
+    "9 Iron": 4,
+    "8 Iron": 5,
+    "7 Iron": 6,
+    "5 Iron": 7,
+    "5 Hybrid": 8,
+    "3 Hybrid": 9,
+    "3 Wood": 10
+}
+distance_summary = (
+    filtered_df.groupby("Club")["Total Distance"]
+    .agg(["min", "mean", "max"])
+    .round(0)
+    .astype(int)
+    .reset_index()
+)
+distance_summary["SortOrder"] = distance_summary["Club"].map(club_order)
+distance_summary = distance_summary.sort_values("SortOrder").drop(columns=["SortOrder"])
+st.dataframe(distance_summary.rename(columns={"min": "Min", "mean": "Average", "max": "Max"}).style.set_properties(**{'font-size': '12px'}), use_container_width=True)
 
 # --- Dispersion Chart with Filled Ellipses ---
 with st.expander("Shot Dispersion Chart", expanded=True):
