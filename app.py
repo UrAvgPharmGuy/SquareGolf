@@ -91,13 +91,13 @@ else:
 st.subheader("Gapping Chart: Avg Carry and Total Distance per Club")
 if "Carry" in filtered_df.columns and "TotalDistance" in filtered_df.columns:
     gapping_df = (
-        filtered_df.groupby("Club")[["Carry", "TotalDistance"]]
+        filtered_df.groupby("Club")[["Carry", "Total"]]
         .mean()
         .reset_index()
         .sort_values("Carry", ascending=False)
     )
 
-    gapping_df_melted = gapping_df.melt(id_vars="Club", value_vars=["Carry", "TotalDistance"], 
+    gapping_df_melted = gapping_df.melt(id_vars="Club", value_vars=["Carry", "Total"], 
                                         var_name="Metric", value_name="Distance")
 
     fig_gapping = px.bar(
