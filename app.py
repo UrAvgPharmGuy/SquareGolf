@@ -22,7 +22,7 @@ def load_and_clean_csv(filepath):
 
     df = df[df["Club"].notnull() & ~df["Index"].astype(str).str.contains("Average|Deviation", na=False)]
 
-    # Rename core metrics for easier use
+    # Rename core metrics for easier use (delay coercion to later step)
     rename_map = {
         "Carry": "Carry",
         "Offline": "Offline",
@@ -33,7 +33,7 @@ def load_and_clean_csv(filepath):
     }
     for original, new in rename_map.items():
         if original in df.columns:
-            df[new] = pd.to_numeric(df[original], errors="coerce")
+            df[new] = df[original]  # just copy without coercing yet
 
     return df
 
@@ -70,6 +70,12 @@ directional_cols = [
 for col in directional_cols:
     if col in filtered_df.columns:
         filtered_df[col] = filtered_df[col].apply(convert_lr_to_float)
+
+# Coerce numeric values after directional fix
+numeric_cols = ["Carry", "Total Distance", "Ball Speed", "Launch Angle", "Spin Rate"]
+for col in numeric_cols:
+    if col in filtered_df.columns:
+        filtered_df[col] = pd.to_numeric(filtered_df[col], errors="coerce")
 
 # --- Dispersion Chart ---
 st.subheader("Dispersion Chart: Carry vs Offline")
