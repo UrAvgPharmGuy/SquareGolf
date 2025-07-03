@@ -85,7 +85,7 @@ col1, col2 = st.columns([2, 1])
 with col1:
     st.subheader("Total Distance Summary by Club")
     if "Total Distance" in filtered_df.columns:
-        distance_summary = filtered_df.groupby("Club")["Total Distance"].agg(["min", "mean", "max"]).round(1).reset_index()
+        distance_summary = filtered_df.groupby("Club")["Total Distance"].agg(["min", "mean", "max"]).round(0).astype(int).reset_index().sort_values("Club")
         st.dataframe(distance_summary.rename(columns={"min": "Min", "mean": "Average", "max": "Max"}).style.set_properties(**{'font-size': '12px'}), use_container_width=True)
 
 # --- Dispersion Chart with Filled Ellipses ---
