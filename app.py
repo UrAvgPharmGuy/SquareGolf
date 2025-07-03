@@ -50,7 +50,12 @@ if df.empty:
 with st.sidebar:
     st.subheader("Filters")
     with st.expander("Club & Session Filters", expanded=True):
-        selected_clubs = st.multiselect("Select Club(s)", sorted(df["Club"].unique()), default=sorted(df["Club"].unique()))
+        all_clubs = sorted(df["Club"].unique())
+select_all = st.checkbox("Select all clubs", value=True)
+if select_all:
+    selected_clubs = st.multiselect("Select Club(s)", all_clubs, default=all_clubs)
+else:
+    selected_clubs = st.multiselect("Select Club(s)", all_clubs)), default=sorted(df["Club"].unique()))
         if "Date" in df.columns:
             df["Date"] = pd.to_datetime(df["Date"], errors='coerce')
             valid_dates = df["Date"].dropna().dt.date.unique()
