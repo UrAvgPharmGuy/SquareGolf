@@ -88,31 +88,39 @@ with col1:
         distance_summary = filtered_df.groupby("Club")["Total Distance"].agg(["min", "mean", "max"]).round(1).reset_index()
         st.dataframe(distance_summary.rename(columns={"min": "Min", "mean": "Average", "max": "Max"}).style.set_properties(**{'font-size': '12px'}), use_container_width=True)
 
-# --- Dispersion Chart ---
-with st.expander("Shot Dispersion Tracer Chart", expanded=True):
+# --- Dispersion Chart with Circles ---
+with st.expander("Shot Dispersion Chart", expanded=True):
     if "Carry" in filtered_df.columns and "Offline" in filtered_df.columns:
-        fig_tracer = go.Figure()
-        for club in filtered_df["Club"].unique():
-            club_data = filtered_df[filtered_df["Club"] == club]
-            for _, row in club_data.iterrows():
-                fig_tracer.add_trace(go.Scatter(
-                    x=[0, row["Offline"]],
-                    y=[0, row["Carry"]],
-                    mode='lines+markers',
-                    line=dict(width=2),
-                    marker=dict(size=6),
-                    name=club,
-                    showlegend=False,
-                    hoverinfo='text',
-                    text=f"{club}<br>Carry: {row['Carry']} yd<br>Offline: {row['Offline']} yd"
-                ))
-        fig_tracer.update_layout(
-            title="Shot Tracer Dispersion by Club",
-            xaxis_title="Offline (yd)",
-            yaxis_title="Carry (yd)",
+        fig_dispersion = px.scatter(
+            filtered_df,
+            x="Offline",
+            y="Carry",
+            color="Club",
+            hover_data=["Ball Speed", "Spin Rate"],
+            title="Shot Dispersion by Club",
             height=400
         )
-        st.plotly_chart(fig_tracer, use_container_width=True)
+
+        # Add ellipse-like outline using go.Scatter
+        for club in filtered_df["Club"].unique():
+            club_data = filtered_df[filtered_df["Club"] == club]
+            if len(club_data) > 2:
+                x_mean = club_data["Offline"].mean()
+                y_mean = club_data["Carry"].mean()
+                x_std = club_data["Offline"].std()
+                y_std = club_data["Carry"].std()
+                fig_dispersion.add_shape(
+                    type="circle",
+                    xref="x",
+                    yref="y",
+                    x0=x_mean - x_std,
+                    x1=x_mean + x_std,
+                    y0=y_mean - y_std,
+                    y1=y_mean + y_std,
+                    line=dict(color="rgba(0,0,0,0.3)", width=2),
+                )
+
+        st.plotly_chart(fig_dispersion, use_container_width=True)
     else:
         st.warning("Missing Carry or Offline data.")
 
