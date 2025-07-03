@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import re
 
 # Page config
@@ -77,19 +78,37 @@ for col in numeric_cols:
     if col in filtered_df.columns:
         filtered_df[col] = pd.to_numeric(filtered_df[col], errors="coerce")
 
+# --- Summary Table: Min/Avg/Max Total Distance ---
+st.subheader("Total Distance Summary by Club")
+if "Total Distance" in filtered_df.columns:
+    distance_summary = filtered_df.groupby("Club")["Total Distance"].agg(["min", "mean", "max"]).round(1).reset_index()
+    st.dataframe(distance_summary.rename(columns={"min": "Min", "mean": "Average", "max": "Max"}), use_container_width=True)
+
 # --- Dispersion Chart ---
-st.subheader("Dispersion Chart: Carry vs Offline")
+st.subheader("Shot Dispersion Tracer Chart")
 if "Carry" in filtered_df.columns and "Offline" in filtered_df.columns:
-    fig_dispersion = px.scatter(
-        filtered_df,
-        x="Offline",
-        y="Carry",
-        color="Club",
-        hover_data=["Ball Speed", "Spin Rate"],
-        title="Shot Dispersion by Club",
+    fig_tracer = go.Figure()
+    for club in filtered_df["Club"].unique():
+        club_data = filtered_df[filtered_df["Club"] == club]
+        for _, row in club_data.iterrows():
+            fig_tracer.add_trace(go.Scatter(
+                x=[0, row["Offline"]],
+                y=[0, row["Carry"]],
+                mode='lines+markers',
+                line=dict(width=2),
+                marker=dict(size=6),
+                name=club,
+                showlegend=False,
+                hoverinfo='text',
+                text=f"{club}<br>Carry: {row['Carry']} yd<br>Offline: {row['Offline']} yd"
+            ))
+    fig_tracer.update_layout(
+        title="Shot Tracer Dispersion by Club",
+        xaxis_title="Offline (yd)",
+        yaxis_title="Carry (yd)",
         height=500
     )
-    st.plotly_chart(fig_dispersion, use_container_width=True)
+    st.plotly_chart(fig_tracer, use_container_width=True)
 else:
     st.warning("Missing Carry or Offline data.")
 
