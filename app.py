@@ -91,6 +91,9 @@ with col1:
 # --- Dispersion Chart with Filled Ellipses ---
 with st.expander("Shot Dispersion Chart", expanded=True):
     if "Carry" in filtered_df.columns and "Offline" in filtered_df.columns:
+        color_palette = px.colors.qualitative.Set2
+        club_colors = {club: color_palette[i % len(color_palette)] for i, club in enumerate(filtered_df["Club"].unique())}
+
         fig_dispersion = px.scatter(
             filtered_df,
             x="Offline",
@@ -98,11 +101,9 @@ with st.expander("Shot Dispersion Chart", expanded=True):
             color="Club",
             hover_data=["Ball Speed", "Spin Rate"],
             title="Shot Dispersion by Club",
-            height=400
+            height=400,
+            color_discrete_map=club_colors
         )
-
-        color_palette = px.colors.qualitative.Set2
-        club_colors = {club: color_palette[i % len(color_palette)] for i, club in enumerate(filtered_df["Club"].unique())}
 
         for club in filtered_df["Club"].unique():
             club_data = filtered_df[filtered_df["Club"] == club]
@@ -112,21 +113,18 @@ with st.expander("Shot Dispersion Chart", expanded=True):
                 x_std = club_data["Offline"].std()
                 y_std = club_data["Carry"].std()
 
-                # Convert RGB to RGBA with transparency
+                # Use 2x std for ellipse coverage and consistent color
                 base_color = club_colors[club]
-                if base_color.startswith('rgb'):
-                    rgba = base_color.replace('rgb', 'rgba').replace(')', ', 0.2)')
-                else:
-                    rgba = base_color
+                rgba = base_color.replace('rgb', 'rgba').replace(')', ', 0.2)') if base_color.startswith('rgb') else base_color
 
                 fig_dispersion.add_shape(
                     type="circle",
                     xref="x",
                     yref="y",
-                    x0=x_mean - x_std,
-                    x1=x_mean + x_std,
-                    y0=y_mean - y_std,
-                    y1=y_mean + y_std,
+                    x0=x_mean - 2 * x_std,
+                    x1=x_mean + 2 * x_std,
+                    y0=y_mean - 2 * y_std,
+                    y1=y_mean + 2 * y_std,
                     line=dict(color=base_color, width=1),
                     fillcolor=rgba,
                     opacity=0.5,
