@@ -45,7 +45,7 @@ remove_outliers = st.sidebar.checkbox("Remove outliers", value=True)
 import glob
 import os
 
-session_files = glob.glob("Sessions/Session_*.csv")
+session_files = glob.glob("Sessions/session_*.csv")
 all_sessions = []
 
 for f in session_files:
