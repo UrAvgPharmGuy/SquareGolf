@@ -80,6 +80,22 @@ for col in numeric_cols:
     if col in filtered_df.columns:
         filtered_df[col] = pd.to_numeric(filtered_df[col], errors="coerce")
 
+# --- Club Recommendation ---
+st.subheader("Club Recommendation by Target Distance")
+target_distance = st.number_input("Enter your target distance (yds):", min_value=0, max_value=400, step=1)
+
+if target_distance > 0 and "Total Distance" in filtered_df.columns:
+    avg_distances = (
+        filtered_df.groupby("Club")["Total Distance"]
+        .mean()
+        .reset_index()
+        .rename(columns={"Total Distance": "Avg Distance"})
+    )
+    avg_distances["Delta"] = abs(avg_distances["Avg Distance"] - target_distance)
+    best_match = avg_distances.sort_values("Delta").iloc[0]
+
+    st.success(f"💡 Best match: **{best_match['Club']}** (Avg: {round(best_match['Avg Distance'])} yds)")
+
 # --- Summary Table: Min/Avg/Max Total Distance ---
 col1, col2 = st.columns([2, 1])
 with col1:
