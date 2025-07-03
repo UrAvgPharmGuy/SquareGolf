@@ -88,26 +88,31 @@ else:
     st.warning("Missing Carry or Offline data.")
 
 # --- Gapping Chart ---
-st.subheader("Gapping Chart: Avg Carry per Club")
-if "Carry" in filtered_df.columns:
+st.subheader("Gapping Chart: Avg Carry and Total Distance per Club")
+if "Carry" in filtered_df.columns and "TotalDistance" in filtered_df.columns:
     gapping_df = (
-        filtered_df.groupby("Club")["Carry"]
+        filtered_df.groupby("Club")[["Carry", "TotalDistance"]]
         .mean()
         .reset_index()
         .sort_values("Carry", ascending=False)
     )
 
+    gapping_df_melted = gapping_df.melt(id_vars="Club", value_vars=["Carry", "TotalDistance"], 
+                                        var_name="Metric", value_name="Distance")
+
     fig_gapping = px.bar(
-        gapping_df,
-        x="Carry",
+        gapping_df_melted,
+        x="Distance",
         y="Club",
+        color="Metric",
         orientation="h",
-        title="Average Carry Distance by Club",
+        barmode="group",
+        title="Average Carry and Total Distance by Club",
         height=500
     )
     st.plotly_chart(fig_gapping, use_container_width=True)
 else:
-    st.warning("Missing Carry data.")
+    st.warning("Missing Carry or Total Distance data.")
 
 # --- Raw Table ---
 st.subheader("Shot Data Table")
