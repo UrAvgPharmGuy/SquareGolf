@@ -100,6 +100,8 @@ if "Carry" in filtered_df.columns and "Total Distance" in filtered_df.columns:
     gapping_df_melted = gapping_df.melt(id_vars="Club", value_vars=["Carry", "Total Distance"], 
                                         var_name="Metric", value_name="Distance")
 
+    gapping_df_melted["Distance"] = gapping_df_melted["Distance"].round(0)
+
     fig_gapping = px.bar(
         gapping_df_melted,
         x="Distance",
@@ -107,9 +109,11 @@ if "Carry" in filtered_df.columns and "Total Distance" in filtered_df.columns:
         color="Metric",
         orientation="h",
         barmode="group",
+        text="Distance",
         title="Average Carry and Total Distance by Club",
         height=500
     )
+    fig_gapping.update_traces(textposition='outside')
     st.plotly_chart(fig_gapping, use_container_width=True)
 else:
     st.warning("Missing Carry or Total Distance data.")
