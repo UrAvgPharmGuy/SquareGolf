@@ -47,7 +47,7 @@ import os
 
 session_files = glob.glob("sessions/session_*.csv")
 all_sessions = []
-
+# Look for files
 for f in session_files:
     df_temp = load_and_clean_csv(f)
     session_date = os.path.basename(f).replace("session_", "").replace(".csv", "")
