@@ -47,12 +47,21 @@ if df.empty:
     st.stop()
 
 # --- Sidebar filters ---
-club_list = sorted(df["Club"].unique())
 with st.sidebar:
     st.subheader("Filters")
-    selected_clubs = st.multiselect("Select Club(s)", club_list, default=club_list)
+    with st.expander("Club & Session Filters", expanded=True):
+        selected_clubs = st.multiselect("Select Club(s)", sorted(df["Club"].unique()), default=sorted(df["Club"].unique()))
+        if "Date" in df.columns:
+            df["Date"] = pd.to_datetime(df["Date"], errors='coerce')
+            valid_dates = df["Date"].dropna().dt.date.unique()
+            if len(valid_dates) > 0:
+                selected_date = st.selectbox("Select Session Date", sorted(valid_dates))
+                df = df[df["Date"].dt.date == selected_date]
 
 filtered_df = df[df["Club"].isin(selected_clubs)]
+if filtered_df.empty:
+    st.warning("Please select at least one club with valid data.")
+    st.stop()
 
 
 def convert_lr_to_float(value):
