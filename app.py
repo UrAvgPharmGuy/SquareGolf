@@ -9,29 +9,27 @@ st.set_page_config(page_title="Golf Launch Monitor Dashboard", layout="wide")
 # --- Load and clean data ---
 def load_and_clean_csv(filepath):
     try:
-        df = pd.read_csv(filepath)
-        if "Club" not in df.columns:
-            df = pd.read_csv(filepath, header=2)
+        df = pd.read_csv(filepath, skiprows=2)  # Skip metadata, load actual header row
     except Exception as e:
         st.error(f"Error loading file: {e}")
         return pd.DataFrame()
 
-    df.columns = df.columns.str.strip()
+    df.columns = df.columns.str.strip().str.replace('(yd)', '').str.replace('(mph)', '').str.replace(' ', '')
 
     if "Club" not in df.columns:
         st.error("Missing 'Club' column. Please check your CSV.")
         return pd.DataFrame()
 
-    df = df[df["Club"].notnull() & (df["Club"] != "Average")]
+    df = df[df["Club"].notnull() & ~df["Index"].astype(str).str.contains("Average|Deviation", na=False)]
 
-    # Rename columns to consistent names
+    # Rename core metrics for easier use
     rename_map = {
-        "Carry(yd)": "Carry",
-        "Offline(yd)": "Offline",
-        "Total(yd)": "Total Distance",
-        "Ball Speed(mph)": "Ball Speed",
-        "Launch Angle": "Launch Angle",
-        "Spin Rate": "Spin Rate"
+        "Carry": "Carry",
+        "Offline": "Offline",
+        "Total": "Total Distance",
+        "BallSpeed": "Ball Speed",
+        "LaunchAngle": "Launch Angle",
+        "SpinRate": "Spin Rate"
     }
     for original, new in rename_map.items():
         if original in df.columns:
@@ -54,19 +52,19 @@ filtered_df = df[df["Club"].isin(selected_clubs)]
 def convert_lr_to_float(value):
     if isinstance(value, str):
         value = value.strip()
-        if value.startswith('L'):
-            return -float(value[1:])
-        elif value.startswith('R'):
-            return float(value[1:])
+        match = re.match(r'^([LR])(\d+(\.\d+)?)$', value)
+        if match:
+            return -float(match[2]) if match[1] == 'L' else float(match[2])
         try:
             return float(value)
         except:
             return value
     return value
 
+# Columns likely to contain L/R strings
 directional_cols = [
-    "Launch Direction", "Spin Axis", "Side Spin", "Offline",
-    "Club Path", "Face Angle"
+    "LaunchDirection", "SpinAxis", "SideSpin", "Offline",
+    "ClubPath", "FaceAngle"
 ]
 
 for col in directional_cols:
@@ -108,6 +106,8 @@ if "Carry" in filtered_df.columns:
         height=500
     )
     st.plotly_chart(fig_gapping, use_container_width=True)
+else:
+    st.warning("Missing Carry data.")
 
 # --- Raw Table ---
 st.subheader("Shot Data Table")
