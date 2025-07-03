@@ -14,7 +14,7 @@ def load_and_clean_csv(filepath):
         st.error(f"Error loading file: {e}")
         return pd.DataFrame()
 
-    df.columns = df.columns.str.strip().str.replace('(yd)', '').str.replace('(mph)', '').str.replace(' ', '')
+    df.columns = df.columns.str.strip().str.replace(r'[() ]', '', regex=True)
 
     if "Club" not in df.columns:
         st.error("Missing 'Club' column. Please check your CSV.")
