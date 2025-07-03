@@ -41,9 +41,22 @@ def load_and_clean_csv(filepath):
 # --- Outlier Filter Toggle ---
 remove_outliers = st.sidebar.checkbox("Remove outliers", value=True)
 
-# --- Load file ---
-df = load_and_clean_csv("golfdata.csv")
+# --- Load and merge all session files ---
+import glob
+import os
+
+session_files = glob.glob("sessions/session_*.csv")
+all_sessions = []
+
+for f in session_files:
+    df_temp = load_and_clean_csv(f)
+    session_date = os.path.basename(f).replace("session_", "").replace(".csv", "")
+    df_temp["Session"] = session_date  # add a session identifier
+    all_sessions.append(df_temp)
+
+df = pd.concat(all_sessions, ignore_index=True) if all_sessions else pd.DataFrame()
 if df.empty:
+    st.error("No session data found.")
     st.stop()
 
 # --- Sidebar filters ---
@@ -57,12 +70,10 @@ with st.sidebar:
         else:
             selected_clubs = st.multiselect("Select Club(s)", all_clubs)
 
-        if "Date" in df.columns:
-            df["Date"] = pd.to_datetime(df["Date"], errors='coerce')
-            valid_dates = df["Date"].dropna().dt.date.unique()
-            if len(valid_dates) > 0:
-                selected_date = st.selectbox("Select Session Date", sorted(valid_dates))
-                df = df[df["Date"].dt.date == selected_date]
+        if "Session" in df.columns:
+            unique_sessions = sorted(df["Session"].unique())
+            selected_session = st.selectbox("Select Session", unique_sessions)
+            df = df[df["Session"] == selected_session]
 
 filtered_df = df[df["Club"].isin(selected_clubs)]
 if filtered_df.empty:
