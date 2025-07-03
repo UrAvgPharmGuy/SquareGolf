@@ -38,6 +38,9 @@ def load_and_clean_csv(filepath):
 
     return df
 
+# --- Outlier Filter Toggle ---
+remove_outliers = st.sidebar.checkbox("Remove outliers", value=True)
+
 # --- Load file ---
 df = load_and_clean_csv("golfdata.csv")
 if df.empty:
@@ -50,6 +53,23 @@ with st.sidebar:
     selected_clubs = st.multiselect("Select Club(s)", club_list, default=club_list)
 
 filtered_df = df[df["Club"].isin(selected_clubs)]
+
+# --- Apply Outlier Filtering (IQR-based and custom rules) ---
+if remove_outliers:
+    for col in ["Carry", "Total Distance"]:
+        if col in filtered_df.columns:
+            Q1 = filtered_df[col].quantile(0.25)
+            Q3 = filtered_df[col].quantile(0.75)
+            IQR = Q3 - Q1
+            filtered_df = filtered_df[(filtered_df[col] >= Q1 - 1.5 * IQR) & (filtered_df[col] <= Q3 + 1.5 * IQR)]
+
+    # Custom cleanup rules
+    if "Ball Speed" in filtered_df.columns:
+        filtered_df = filtered_df[filtered_df["Ball Speed"] >= 40]
+    if "Carry" in filtered_df.columns:
+        filtered_df = filtered_df[filtered_df["Carry"] >= 30]
+    if "Offline" in filtered_df.columns:
+        filtered_df = filtered_df[abs(filtered_df["Offline"]) <= 50]
 
 # --- Standardize directional values ---
 def convert_lr_to_float(value):
